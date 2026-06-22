@@ -1,29 +1,48 @@
 #!/usr/bin/env python3
 import json
+import os
 from pathlib import Path
 import requests
-from bs4 import BeautifulSoup
 from pync import Notifier
 
-URL="https://www.data.gouv.fr/fr/datasets/open-bio-base-complete-sur-les-depenses-de-biologie-medicale-interregimes/"
-STATE=Path(__file__).with_name("state.json")
+DATASET_SLUG = "open-bio-base-complete-sur-les-depenses-de-biologie-medicale-interregimes"
+API_URL = f"https://www.data.gouv.fr/api/1/datasets/{DATASET_SLUG}/"
 
-def load():
-    if STATE.exists():
-        return json.loads(STATE.read_text())
-    return {"seen":False}
+STATE_FILE = Path(__file__).with_name("state.json")
 
-def save(s):
-    STATE.write_text(json.dumps(s))
+def load_state():
+    if STATE_FILE.exists():
+        return json.loads(STATE_FILE.read_text())
+    return {"last_resource_ids": []}
 
-html=requests.get(URL,timeout=30,headers={"User-Agent":"Mozilla/5.0"}).text
-soup=BeautifulSoup(html,"html.parser")
-text=soup.get_text(" ",strip=True)
-found="2025" in text
+def save_state(state):
+    STATE_FILE.write_text(json.dumps(state, indent=2))
 
-st=load()
-if found and not st["seen"]:
-    Notifier.notify("La base Open Bio 2025 semble disponible !",title="Veille Open Bio")
-    print("ALERTE : 2025 détecté")
-st["seen"]=found
-save(st)
+def fetch_resources():
+    r = requests.get(API_URL, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    resources = data.get("resources", [])
+    return [res.get("id") for res in resources if res.get("id")]
+
+def notify(msg):
+    Notifier.notify(msg, title="Veille Open Bio")
+
+def main():
+    current_ids = fetch_resources()
+    state = load_state()
+
+    old_ids = set(state.get("last_resource_ids", []))
+    new_ids = set(current_ids)
+
+    added = new_ids - old_ids
+
+    if added:
+        notify(f"Nouvelle ressource détectée sur Open Bio ({len(added)})")
+        print("ALERTE:", added)
+
+    state["last_resource_ids"] = current_ids
+    save_state(state)
+
+if __name__ == "__main__":
+    main()
