@@ -4,8 +4,10 @@
 <key>Label</key><string>fr.openbio.watch</string>
 <key>ProgramArguments</key>
 <array>
-<string>PATH_TO_PYTHON</string>
-<string>PATH_TO_PROJECT/check_open_bio.py</string>
+<string>/Users/arthurandrestheodo/Desktop/OpenBio/.venv/bin/python3</string>
+<string>/Users/arthurandrestheodo/Desktop/OpenBio/check_open_bio.py</string>
+<string>--year</string>
+<string>2025</string>
 </array>
 <key>StartInterval</key><integer>3600</integer>
 <key>RunAtLoad</key><true/>
